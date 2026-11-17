@@ -1,3 +1,4 @@
+'use client'
 import { useState } from 'react';
 import RobotArmViewer from '@/components/RobotArmViewer';
 import TransformEditor from '@/components/TransformEditor';
