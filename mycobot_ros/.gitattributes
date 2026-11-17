@@ -1,0 +1,2 @@
+src export-ignore
+*.sh text eol=lf
