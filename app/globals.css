@@ -12,6 +12,14 @@
   --signal: #63b3c6;
   --signal-tint: #16353d;
   --danger: #dc7a6b;
+
+  /* Dark palette for the public landing (same family as the instrument panel). */
+  --paper: #080c10;       /* fondo de página */
+  --land-ink: #e4ebe8;    /* texto principal */
+  --land-muted: #94a4aa;  /* texto secundario */
+  --land-accent: #0b5c68; /* barra superior y botón principal */
+  --land-line: #33434c;   /* bordes y divisores */
+  --land-light: #f7f9f9;  /* texto sobre el acento */
 }
 
 @theme inline {
@@ -25,8 +33,17 @@
   --color-signal: var(--signal);
   --color-signal-tint: var(--signal-tint);
   --color-danger: var(--danger);
+  --color-paper: var(--paper);
+  --color-land-ink: var(--land-ink);
+  --color-land-muted: var(--land-muted);
+  --color-land-accent: var(--land-accent);
+  --color-land-line: var(--land-line);
+  --color-land-light: var(--land-light);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-plex-sans);
+  --font-data: var(--font-plex-mono);
 }
 
 body {

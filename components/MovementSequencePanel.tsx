@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 import { JOINT_LIMITS, JOINT_NAMES } from '@/components/RobotArmViewer';
 
 /** Paso editable del formulario: los valores se guardan como texto para poder borrarlos mientras se edita. */
@@ -54,7 +55,12 @@ const jointLabel = (index: number): string => `J${index + 1}`;
 const fieldClass =
   'w-full rounded-[3px] border border-line bg-surface-raised px-2 py-1.5 font-mono text-xs tabular-nums text-ink outline-none transition focus:border-signal focus:ring-2 focus:ring-signal/20 disabled:cursor-not-allowed disabled:opacity-50';
 
-const MovementSequencePanel = ({ onExecute, running, activeStep, waitingSeconds }: MovementSequencePanelProps) => {
+export default function MovementSequencePanel({
+  onExecute,
+  running,
+  activeStep,
+  waitingSeconds,
+}: MovementSequencePanelProps): ReactElement {
   const nextId = useRef(1);
   const [steps, setSteps] = useState<MovementStep[]>(() => [createStep(0)]);
 
@@ -265,6 +271,4 @@ const MovementSequencePanel = ({ onExecute, running, activeStep, waitingSeconds 
       </footer>
     </aside>
   );
-};
-
-export default MovementSequencePanel;
+}

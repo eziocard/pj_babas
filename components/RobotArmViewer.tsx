@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import type { ReactElement, Ref } from 'react';
 import { Box3, MathUtils, Matrix4, Object3D, Quaternion, Vector3 } from 'three';
 import type { Group } from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -37,6 +30,8 @@ export type RobotArmViewerProps = {
   onMoveJoints?: MoveJointsListener;
   /** Modo de cámara. Por defecto, libre. */
   cameraMode?: CameraMode;
+  /** En React 19, `ref` se recibe como una prop más. */
+  ref?: Ref<RobotArmViewerHandle>;
 };
 
 export const JOINT_NAMES: JointName[] = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6'];
@@ -101,7 +96,7 @@ const normalizeSpeed = (value: number): number => (Number.isFinite(value) && val
  * Vive dentro de Canvas. Mantiene el estado del movimiento y rota cada
  * articulación sobre su eje local sin alterar el origen del URDF ni a sus hijos.
  */
-const JointAnimator = ({ robot, onReady }: JointAnimatorProps) => {
+function JointAnimator({ robot, onReady }: JointAnimatorProps): null {
   const jointNodes = useRef<JointNodes>({});
   const currentAngles = useRef<JointValues>(zeroAngles());
   const targetAngles = useRef<JointValues>(zeroAngles());
@@ -187,7 +182,7 @@ const JointAnimator = ({ robot, onReady }: JointAnimatorProps) => {
   });
 
   return null;
-};
+}
 
 type SceneControlsProps = {
   mode: CameraMode;
@@ -199,7 +194,7 @@ type SceneControlsProps = {
  * límite polar con la distancia actual permite acercarse a la base sin dejar
  * que la cámara atraviese el suelo al alejarse.
  */
-const SceneControls = ({ mode, floorY }: SceneControlsProps) => {
+function SceneControls({ mode, floorY }: SceneControlsProps): ReactElement {
   const camera = useThree((state) => state.camera);
   const [maxPolarAngle, setMaxPolarAngle] = useState(Math.PI);
 
@@ -222,9 +217,13 @@ const SceneControls = ({ mode, floorY }: SceneControlsProps) => {
       maxPolarAngle={maxPolarAngle}
     />
   );
-};
+}
 
-const RobotArmViewer = forwardRef<RobotArmViewerHandle, RobotArmViewerProps>(({ onMoveJoints, cameraMode = 'free' }, ref) => {
+export default function RobotArmViewer({
+  onMoveJoints,
+  cameraMode = 'free',
+  ref,
+}: RobotArmViewerProps): ReactElement {
   const [models, setModels] = useState<Record<string, Object3D>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -351,8 +350,4 @@ const RobotArmViewer = forwardRef<RobotArmViewerHandle, RobotArmViewerProps>(({ 
       </div>
     </div>
   );
-});
-
-RobotArmViewer.displayName = 'RobotArmViewer';
-
-export default RobotArmViewer;
+}
