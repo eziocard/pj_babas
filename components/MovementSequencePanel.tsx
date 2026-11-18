@@ -26,6 +26,8 @@ type MovementSequencePanelProps = {
   running: boolean;
   activeStep: number | null;
   waitingSeconds: number | null;
+  /** Genera código Python a partir de los pasos definidos a mano. */
+  onExportPython?: (steps: SequenceStep[]) => void;
 };
 
 const DEFAULT_SPEED = '60';
@@ -60,6 +62,7 @@ export default function MovementSequencePanel({
   running,
   activeStep,
   waitingSeconds,
+  onExportPython,
 }: MovementSequencePanelProps): ReactElement {
   const nextId = useRef(1);
   const [steps, setSteps] = useState<MovementStep[]>(() => [createStep(0)]);
@@ -101,8 +104,13 @@ export default function MovementSequencePanel({
     await onExecute(steps.map(parseStep));
   };
 
+  const handleExportPython = (): void => {
+    if (running || steps.length === 0) return;
+    onExportPython?.(steps.map(parseStep));
+  };
+
   return (
-    <aside className="absolute right-0 top-0 z-10 flex h-full w-[min(24rem,94vw)] flex-col border-l border-white/10 bg-surface text-ink shadow-[-18px_0_48px_rgba(0,0,0,0.35)]">
+    <div className="flex min-h-0 flex-1 flex-col">
       <header className="border-b border-white/10 px-5 py-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Secuencia de movimiento</h2>
@@ -113,6 +121,21 @@ export default function MovementSequencePanel({
         <p className="mt-1.5 max-w-64 text-xs leading-relaxed text-muted">
           Define posiciones, velocidades y pausas. Se ejecutan en orden.
         </p>
+
+        <button
+          type="button"
+          onClick={handleExportPython}
+          disabled={running || steps.length === 0}
+          className="mt-3 flex w-full items-center gap-2 rounded-[3px] border border-line bg-surface-raised px-2.5 py-2 text-left text-[11px] text-muted transition hover:border-signal/50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <span aria-hidden="true" className="font-data text-[11px] text-py">
+            {'{}'}
+          </span>
+          <span>Pasar secuencia a código Python</span>
+          <span aria-hidden="true" className="ml-auto font-data text-[10px] text-muted">
+            → Editor
+          </span>
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -269,6 +292,6 @@ export default function MovementSequencePanel({
               : `${steps.length} paso(s) definido(s)`}
         </p>
       </footer>
-    </aside>
+    </div>
   );
 }

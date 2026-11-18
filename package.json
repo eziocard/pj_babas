@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "python:dev": "cd python && .venv/bin/python -m app",
+    "python:check": "cd python && .venv/bin/ruff check app tests && .venv/bin/black --check app tests && .venv/bin/mypy app tests && .venv/bin/pytest -q"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

@@ -20,6 +20,11 @@
   --land-accent: #0b5c68; /* barra superior y botón principal */
   --land-line: #33434c;   /* bordes y divisores */
   --land-light: #f7f9f9;  /* texto sobre el acento */
+
+  /* Python console: a second instrument inside the same panel. */
+  --console-bg: #0b1216;
+  --console-line: #26343c;
+  --py: #e9b65c;
 }
 
 @theme inline {
@@ -39,6 +44,9 @@
   --color-land-accent: var(--land-accent);
   --color-land-line: var(--land-line);
   --color-land-light: var(--land-light);
+  --color-console: var(--console-bg);
+  --color-console-line: var(--console-line);
+  --color-py: var(--py);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-space-grotesk);

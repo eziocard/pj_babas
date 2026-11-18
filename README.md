@@ -35,4 +35,21 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # pj_babas
-# pj_babas
+
+## Editor Python
+
+La herramienta `/model3d` incluye un editor Python multilínea (importación y conexión ya preparadas, código totalmente editable) con un botón **Ejecutar**. Ejecuta un subconjunto de `pymycobot` en un servicio Python local y los ángulos resultantes mueven el modelo 3D.
+
+La secuencia y el editor comparten el mismo panel lateral derecho y se muestran por pestañas: **Secuencia** o **Código Python**. Solo una de las dos herramientas está visible a la vez. El botón **Expandir** del panel lo amplía para trabajar cómodamente con el código; el editor pasa a dos columnas y **Reducir** lo devuelve a su ancho habitual.
+
+El botón **Pasar secuencia a código Python** convierte los pasos definidos a mano, incluidas las pausas, cambia a la pestaña del editor y carga el código para revisarlo o modificarlo antes de ejecutarlo. El resultado aparece en el panel lateral del editor y reproduce en el visor todos los movimientos y pausas, no solo la posición final.
+
+Arranca el servicio y Next.js en terminales separadas:
+
+```bash
+npm run python:dev
+npm run dev
+```
+
+Configuración y contrato: [python/README.md](python/README.md).
+

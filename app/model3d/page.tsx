@@ -5,8 +5,17 @@ import type { ReactElement } from 'react';
 import RobotArmViewer, { CameraMode, RobotArmViewerHandle } from '@/components/RobotArmViewer';
 import MovementSequencePanel, { SequenceStep } from '@/components/MovementSequencePanel';
 import TransformEditor from '@/components/TransformEditor';
+import PythonEditor from '@/components/PythonEditor';
+import {
+  CONSOLE_ENDPOINT,
+  DEFAULT_PYTHON_CODE,
+  sequenceToPython,
+  type PythonExecutionResult,
+} from '@/lib/python-console';
 
 type Mode = 'view' | 'edit';
+/** Único panel lateral derecho: en cada momento muestra una de las dos herramientas. */
+type SidePanel = 'sequence' | 'python';
 
 export default function Home(): ReactElement {
   const [mode, setMode] = useState<Mode>('view');
@@ -14,30 +23,89 @@ export default function Home(): ReactElement {
   const [running, setRunning] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [waitingSeconds, setWaitingSeconds] = useState<number | null>(null);
+  const [sidePanel, setSidePanel] = useState<SidePanel>('sequence');
+  const [panelExpanded, setPanelExpanded] = useState(false);
+  const [editorCode, setEditorCode] = useState(DEFAULT_PYTHON_CODE);
+  const [editorFocusToken, setEditorFocusToken] = useState(0);
   const arm = useRef<RobotArmViewerHandle>(null);
 
-  const handleExecute = useCallback(async (steps: SequenceStep[]): Promise<void> => {
-    const controller = arm.current;
-    if (!controller) return;
+  const playEvents = useCallback(
+    async (events: PythonExecutionResult['events']): Promise<void> => {
+      const controller = arm.current;
+      if (!controller) return;
 
-    setRunning(true);
-    try {
-      for (const [index, step] of steps.entries()) {
-        setActiveStep(index);
+      setRunning(true);
+      try {
+        for (const [index, event] of events.entries()) {
+          setActiveStep(index);
+          setWaitingSeconds(null);
+          if (event.kind === 'move') {
+            await controller.moveJoints(event.angles, event.speed);
+          } else {
+            setWaitingSeconds(event.seconds);
+            await new Promise<void>((resolve) => setTimeout(resolve, event.seconds * 1000));
+          }
+        }
+      } finally {
+        setRunning(false);
+        setActiveStep(null);
         setWaitingSeconds(null);
-        await controller.moveJoints(step.angles, step.speed);
-
-        if (index === steps.length - 1 || step.pauseSeconds <= 0) continue;
-
-        setWaitingSeconds(step.pauseSeconds);
-        await new Promise<void>((resolve) => setTimeout(resolve, step.pauseSeconds * 1000));
       }
-    } finally {
-      setRunning(false);
-      setActiveStep(null);
-      setWaitingSeconds(null);
-    }
+    },
+    []
+  );
+
+  const handleExecute = useCallback(
+    async (steps: SequenceStep[]): Promise<void> => {
+      await playEvents(
+        steps.flatMap((step, index) => [
+          { kind: 'move' as const, angles: step.angles, speed: step.speed },
+          ...(index < steps.length - 1 && step.pauseSeconds > 0
+            ? ([{ kind: 'pause' as const, seconds: step.pauseSeconds }] as const)
+            : []),
+        ])
+      );
+    },
+    [playEvents]
+  );
+
+  const handleSequenceToPython = useCallback((steps: SequenceStep[]): void => {
+    setEditorCode(sequenceToPython(steps));
+    setEditorFocusToken((value) => value + 1);
+    setSidePanel('python');
   }, []);
+
+  const handleShowSequence = useCallback((): void => {
+    setSidePanel('sequence');
+    setPanelExpanded(false);
+  }, []);
+
+  const handleEditorExecute = useCallback(
+    async (code: string): Promise<PythonExecutionResult> => {
+      if (running) {
+        return {
+          output: '',
+          angles: null,
+          speed: 60,
+          error: 'Hay una secuencia en ejecución.',
+          events: [],
+        };
+      }
+
+      const response = await fetch(CONSOLE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const result: PythonExecutionResult = await response.json();
+
+      if (!result.error && result.events.length > 0) {
+        await playEvents(result.events);
+      }
+      return result;
+    },
+    [playEvents, running]
+  );
 
   const handleModeChange = (nextMode: Mode): void => {
     if (running) return;
@@ -113,6 +181,7 @@ export default function Home(): ReactElement {
           </>
         )}
 
+
         <div className="ml-auto hidden items-center gap-2 font-mono text-[10px] tracking-wide text-ink/50 lg:flex">
           <span
             className={`h-1.5 w-1.5 rounded-full ${running ? 'bg-amber-400' : 'bg-emerald-400'}`}
@@ -126,12 +195,70 @@ export default function Home(): ReactElement {
         {mode === 'view' ? (
           <>
             <RobotArmViewer ref={arm} cameraMode={cameraMode} />
-            <MovementSequencePanel
-              onExecute={handleExecute}
-              running={running}
-              activeStep={activeStep}
-              waitingSeconds={waitingSeconds}
-            />
+            <aside
+              className={`absolute right-0 top-0 z-10 flex h-full flex-col border-l border-white/10 bg-surface text-ink shadow-[-18px_0_48px_rgba(0,0,0,0.35)] transition-[width] duration-300 ease-out motion-reduce:transition-none ${
+                panelExpanded ? 'w-[min(64rem,94vw)]' : 'w-[min(24rem,94vw)]'
+              }`}
+            >
+              <nav
+                aria-label="Herramienta del brazo"
+                className="flex shrink-0 items-center gap-1 border-b border-white/10 bg-shell-raised/40 px-3 py-2"
+              >
+                <button
+                  type="button"
+                  aria-pressed={sidePanel === 'sequence'}
+                  onClick={handleShowSequence}
+                  className={`flex-1 rounded-[3px] px-3 py-1.5 font-display text-[11px] transition ${
+                    sidePanel === 'sequence'
+                      ? 'bg-surface text-ink shadow-sm'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  Secuencia
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={sidePanel === 'python'}
+                  onClick={() => setSidePanel('python')}
+                  className={`flex-1 rounded-[3px] px-3 py-1.5 font-display text-[11px] transition ${
+                    sidePanel === 'python'
+                      ? 'bg-console text-ink shadow-sm'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  Código Python
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={panelExpanded}
+                  aria-label={panelExpanded ? 'Reducir panel' : 'Expandir panel'}
+                  title={panelExpanded ? 'Reducir panel' : 'Expandir panel'}
+                  onClick={() => setPanelExpanded((value) => !value)}
+                  className="ml-1 shrink-0 rounded-[3px] border border-line/80 px-2 py-1.5 font-data text-[10px] text-muted transition hover:border-signal/50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40"
+                >
+                  {panelExpanded ? 'Reducir' : 'Expandir'}
+                </button>
+              </nav>
+
+              {sidePanel === 'sequence' ? (
+                <MovementSequencePanel
+                  onExecute={handleExecute}
+                  running={running}
+                  activeStep={activeStep}
+                  waitingSeconds={waitingSeconds}
+                  onExportPython={handleSequenceToPython}
+                />
+              ) : (
+                <PythonEditor
+                  onExecute={handleEditorExecute}
+                  code={editorCode}
+                  onCodeChange={setEditorCode}
+                  focusToken={editorFocusToken}
+                  onShowSequence={handleShowSequence}
+                  expanded={panelExpanded}
+                />
+              )}
+            </aside>
           </>
         ) : (
           <TransformEditor />

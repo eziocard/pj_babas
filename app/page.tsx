@@ -2,9 +2,6 @@ import Link from "next/link";
 
 const specs = [
   { value: "6", label: "grados de libertad" },
-  { value: "350 mm", label: "alcance máximo" },
-  { value: "250 g", label: "carga útil" },
-  { value: "±0.5 mm", label: "repetibilidad" },
 ];
 
 const features = [
